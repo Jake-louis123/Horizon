@@ -157,13 +157,7 @@
           aria-atomic="true"
           ref="liveRegion"
         ></div>
-        <form 
-          action="{{ routes.cart_add_url }}" 
-          method="post" 
-          enctype="multipart/form-data" 
-          novalidate="novalidate" 
-          data-type="add-to-cart-form"
-        >
+        {%- form 'product', product, novalidate: 'novalidate', data-type: 'add-to-cart-form' -%}
           <input
             type="hidden"
             name="id"
@@ -183,7 +177,7 @@
             product: product,
             class: 'button--primary sticky-add-to-cart__button'
           %}
-        </form>
+        {%- endform -%}
       </product-form-component>
     </div>
   </div>
@@ -204,8 +198,14 @@
     }
 
     connectedCallback() {
-      // Find the main product form to observe
-      this.mainProductForm = document.querySelector(`[data-section-id="${this.sectionId}"] product-form-component:not([data-sticky-add-to-cart] product-form-component)`);
+      // Find the main product form to observe - look for forms that are NOT inside the sticky cart
+      const sectionElement = document.querySelector(`.shopify-section[data-section-id="${this.sectionId}"]`) || 
+                            document.querySelector(`[data-section-id="${this.sectionId}"]`);
+      
+      if (sectionElement) {
+        // Find product form that is not within this sticky component
+        this.mainProductForm = sectionElement.querySelector('product-form-component:not(sticky-add-to-cart product-form-component)');
+      }
       
       if (!this.mainProductForm) {
         console.warn('Sticky Add to Cart: Main product form not found');
