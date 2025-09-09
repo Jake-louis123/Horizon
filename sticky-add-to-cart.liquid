@@ -110,6 +110,7 @@
     min-width: 140px;
     padding-inline: var(--padding-lg);
     padding-block: var(--padding-sm);
+    height: var(--height-buy-buttons);
   }
 
   /* Hide on mobile by default */
@@ -131,6 +132,9 @@
   class="sticky-add-to-cart"
   data-product-id="{{ product.id }}"
   data-section-id="{{ section.id }}"
+  data-translations-add-to-cart="{{ 'actions.add_to_cart' | t }}"
+  data-translations-sold-out="{{ 'products.product.sold_out' | t }}"
+  data-translations-unavailable="{{ 'products.product.unavailable' | t }}"
 >
   <div class="sticky-add-to-cart__content">
     <div class="sticky-add-to-cart__info">
@@ -204,16 +208,48 @@
       
       if (sectionElement) {
         // Find product form that is not within this sticky component
-        this.mainProductForm = sectionElement.querySelector('product-form-component:not(sticky-add-to-cart product-form-component)');
+        const allProductForms = sectionElement.querySelectorAll('product-form-component');
+        for (const form of allProductForms) {
+          // Check if this form is inside the sticky cart
+          if (!form.closest('sticky-add-to-cart')) {
+            this.mainProductForm = form;
+            break;
+          }
+        }
       }
       
       if (!this.mainProductForm) {
-        console.warn('Sticky Add to Cart: Main product form not found');
-        return;
+        // Retry after a short delay in case DOM is still loading
+        setTimeout(() => {
+          if (sectionElement) {
+            const allProductForms = sectionElement.querySelectorAll('product-form-component');
+            for (const form of allProductForms) {
+              if (!form.closest('sticky-add-to-cart')) {
+                this.mainProductForm = form;
+                break;
+              }
+            }
+          }
+          
+          if (this.mainProductForm) {
+            this.setupIntersectionObserver();
+            this.checkVisibility();
+          } else {
+            console.warn('Sticky Add to Cart: Main product form not found after retry');
+          }
+        }, 100);
+        
+        if (!this.mainProductForm) {
+          console.warn('Sticky Add to Cart: Main product form not found, will retry...');
+        }
       }
 
-      // Set up intersection observer to detect when main form is out of view
-      this.setupIntersectionObserver();
+      if (this.mainProductForm) {
+        // Set up intersection observer to detect when main form is out of view
+        this.setupIntersectionObserver();
+        // Initial check
+        this.checkVisibility();
+      }
       
       // Listen for variant updates from the document (theme events system)
       document.addEventListener('variant:update', this.handleVariantUpdate);
@@ -224,9 +260,6 @@
       if (section) {
         section.addEventListener('variant:update', this.handleVariantUpdate);
       }
-
-      // Initial check
-      this.checkVisibility();
     }
 
     disconnectedCallback() {
@@ -318,14 +351,14 @@
           // Update button text if needed
           const buttonText = addToCartButton.querySelector('.add-to-cart-text__content');
           if (buttonText) {
-            buttonText.textContent = window.Theme?.translations?.sold_out || 'Sold out';
+            buttonText.textContent = this.dataset.translationsSoldOut || 'Sold out';
           }
         } else {
           addToCartButton.removeAttribute('disabled');
           // Update button text if needed
           const buttonText = addToCartButton.querySelector('.add-to-cart-text__content');
           if (buttonText) {
-            buttonText.textContent = window.Theme?.translations?.add_to_cart || 'Add to cart';
+            buttonText.textContent = this.dataset.translationsAddToCart || 'Add to cart';
           }
         }
 
