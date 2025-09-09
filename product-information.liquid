@@ -253,6 +253,9 @@
   </div>
 
   {% content_for 'blocks' %}
+  
+  {%- comment -%} Sticky Add to Cart Button {%- endcomment -%}
+  {% render 'sticky-add-to-cart', product: section.settings.product %}
 </div>
 
 {% schema %}
